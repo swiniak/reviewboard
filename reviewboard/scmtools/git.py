@@ -199,15 +199,19 @@ class GitDiffParser(DiffParser):
         file_info = File()
         file_info.data = self.lines[linenum] + "\n"
         file_info.binary = False
-        diff_line = self.lines[linenum].split()
 
-        try:
-            # Need to remove the "a/" and "b/" prefix
-            file_info.origFile = GIT_DIFF_PREFIX.sub("", diff_line[-2])
-            file_info.newFile = GIT_DIFF_PREFIX.sub("", diff_line[-1])
-        except ValueError:
+        # Remove "diff --git " prefix
+        diff_line = self.lines[linenum][11:]
+        if(not(diff_line.startswith("a/"))):
             raise DiffParserError('The diff file is missing revision '
                                   'information', linenum)
+        b_block_index = diff_line.find(" b/")
+        if(b_block_index < 0):
+            file_info.origFile = diff_line[2:]
+            file_info.newFile = ""
+        else:
+            file_info.origFile = diff_line[2:b_block_index]
+            file_info.newFile = diff_line[b_block_index + 3:]
 
         linenum += 1
 
